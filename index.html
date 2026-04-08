@@ -419,7 +419,7 @@
 
       if (selected) {
         const u = usersData.find(u => u.user_id === selected);
-        const txs = (u.transactions||[]).filter(t => new Date(t.date).getMonth()===activeMonth);
+        const txs = (u.transactions||[]).filter(t => { const d = new Date(t.date); return d.getMonth()===activeMonth && d.getFullYear()===new Date().getFullYear(); });
         const budgets = u.budgets||{mat:0,transport:0,fritid:0,annet:0};
         const spent = CATEGORIES.reduce((acc,c) => { acc[c.id]=txs.filter(t=>t.category===c.id).reduce((s,t)=>s+Number(t.amount),0); return acc; },{});
         const totalSpent = Object.values(spent).reduce((a,b)=>a+b,0);
@@ -553,7 +553,7 @@
 
       if (showAdmin) return <AdminPanel user={user} onBack={() => setShowAdmin(false)} />;
 
-      const monthTxs = transactions.filter(t => new Date(t.date).getMonth()===activeMonth);
+      const monthTxs = transactions.filter(t => { const d = new Date(t.date); return d.getMonth()===activeMonth && d.getFullYear()===activeYear; });
       const spentByCategory = CATEGORIES.reduce((acc,c) => { acc[c.id]=monthTxs.filter(t=>t.category===c.id).reduce((sum,t)=>sum+Number(t.amount),0); return acc; },{});
       const totalSpent = Object.values(spentByCategory).reduce((a,b)=>a+b,0);
       const totalBudget = Object.values(budgets).reduce((a,b)=>a+b,0);
