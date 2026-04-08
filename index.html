@@ -516,6 +516,7 @@
       const [showAdmin, setShowAdmin] = useState(false);
       const [showScanner, setShowScanner] = useState(false);
       const [showReport, setShowReport] = useState(false);
+      const [showInstall, setShowInstall] = useState(false);
 
       useEffect(() => { fetchData(); }, []);
 
@@ -600,6 +601,10 @@
               <div style={s.headerLabel}>FORBRUK</div>
               <div style={{display:"flex",gap:"8px"}}>
                 {isAdmin&&<button onClick={()=>setShowAdmin(true)} style={{...s.logoutBtn,color:"#A29BFE",borderColor:"rgba(162,155,254,0.3)"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{marginRight:"4px",verticalAlign:"middle"}}><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Admin</button>}
+                <button onClick={()=>setShowInstall(true)} style={{...s.logoutBtn,color:"rgba(255,255,255,0.4)"}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{marginRight:"4px",verticalAlign:"middle"}}><path d="M12 2v13M7 9l5 5 5-5"/><path d="M3 20h18"/></svg>
+                  App
+                </button>
                 <button onClick={()=>supabase.auth.signOut()} style={s.logoutBtn}>Logg ut</button>
               </div>
             </div>
@@ -630,6 +635,36 @@
             </div>
 
             {showReport && <MonthlyReport transactions={transactions} budgets={budgets} onClose={()=>setShowReport(false)} />}
+
+            {showInstall && (
+              <div style={s.overlay}>
+                <div style={s.modal}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
+                    <div style={s.modalTitle}>Legg til på hjemskjerm</div>
+                    <button onClick={()=>setShowInstall(false)} style={s.logoutBtn}>✕</button>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"14px",background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"14px"}}>
+                      <div style={{fontSize:"24px",flexShrink:0}}>1</div>
+                      <div style={{fontSize:"14px",color:"rgba(255,255,255,0.7)",lineHeight:"1.5"}}>Åpne appen i <strong style={{color:"white"}}>Safari</strong> på iPhone</div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:"14px",background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"14px"}}>
+                      <div style={{fontSize:"24px",flexShrink:0}}>2</div>
+                      <div style={{fontSize:"14px",color:"rgba(255,255,255,0.7)",lineHeight:"1.5"}}>Trykk på <strong style={{color:"white"}}>Del-ikonet</strong> nederst i Safari<br/><span style={{fontSize:"22px"}}>⬆️</span></div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:"14px",background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"14px"}}>
+                      <div style={{fontSize:"24px",flexShrink:0}}>3</div>
+                      <div style={{fontSize:"14px",color:"rgba(255,255,255,0.7)",lineHeight:"1.5"}}>Scroll ned og trykk <strong style={{color:"white"}}>"Legg til på hjemskjerm"</strong></div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:"14px",background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"14px"}}>
+                      <div style={{fontSize:"24px",flexShrink:0}}>4</div>
+                      <div style={{fontSize:"14px",color:"rgba(255,255,255,0.7)",lineHeight:"1.5"}}>Trykk <strong style={{color:"white"}}>"Legg til"</strong> øverst til høyre</div>
+                    </div>
+                  </div>
+                  <button onClick={()=>setShowInstall(false)} style={{...s.btnPri,width:"100%",marginTop:"20px"}}>Forstått</button>
+                </div>
+              </div>
+            )}
             {showScanner&&<ReceiptScanner onResult={handleScanResult} onClose={()=>setShowScanner(false)}/>}
 
             {view==="legg-til"&&(
