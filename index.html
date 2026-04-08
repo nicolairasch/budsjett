@@ -397,7 +397,12 @@
               <button onClick={()=>setSelected(null)} style={s.backBtn}>← Tilbake</button>
               <div style={s.headerLabel}>ADMIN · BRUKER</div>
               <h1 style={{...s.headerTitle,fontSize:"20px",marginBottom:"16px"}}>{u.email}</h1>
-              <div style={s.monthPicker}>{MONTHS_SHORT.map((m,i)=><button key={i} onClick={()=>setActiveMonth(i)} style={{...s.monthBtn,...(activeMonth===i?s.monthBtnActive:{})}}>{m}</button>)}</div>
+              <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+              <button onClick={()=>setActiveYear(y=>y-1)} style={{...s.monthBtn,padding:"4px 10px"}}>‹</button>
+              <span style={{fontSize:"13px",color:"rgba(255,255,255,0.6)",fontWeight:"500"}}>{activeYear}</span>
+              <button onClick={()=>setActiveYear(y=>y+1)} style={{...s.monthBtn,padding:"4px 10px"}}>›</button>
+            </div>
+            <div style={s.monthPicker}>{MONTHS_SHORT.map((m,i)=><button key={i} onClick={()=>setActiveMonth(i)} style={{...s.monthBtn,...(activeMonth===i?s.monthBtnActive:{})}}>{m}</button>)}</div>
               <div style={s.card}>
                 <div style={{flex:1}}><div style={s.summaryLabel}>Brukt denne måneden</div><div style={s.summaryAmount}>{formatNOK(totalSpent)}</div><div style={s.summaryOf}>av {formatNOK(totalBudget)} budsjett</div></div>
                 <svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8"/><circle cx="40" cy="40" r="34" fill="none" stroke={totalSpent>totalBudget?"#FF6B6B":"#A8E6CF"} strokeWidth="8" strokeDasharray={`${totalBudget>0?Math.min(totalSpent/totalBudget,1)*213.6:0} 213.6`} strokeLinecap="round" transform="rotate(-90 40 40)"/><text x="40" y="45" textAnchor="middle" fill="white" fontSize="12" fontWeight="700">{totalBudget>0?Math.round((totalSpent/totalBudget)*100):0}%</text></svg>
@@ -458,9 +463,11 @@
       const [view, setView] = useState("oversikt");
       const [transactions, setTransactions] = useState([]);
       const [budgets, setBudgets] = useState({ mat: 5000, transport: 1500, fritid: 2000, annet: 1000 });
+      const [allMonthlyBudgets, setAllMonthlyBudgets] = useState({});
       const [form, setForm] = useState({ category: "mat", beskrivelse: "", amount: "", date: today() });
       const [editBudget, setEditBudget] = useState(null);
       const [activeMonth, setActiveMonth] = useState(new Date().getMonth());
+      const [activeYear, setActiveYear] = useState(new Date().getFullYear());
       const [loading, setLoading] = useState(true);
       const [isAdmin, setIsAdmin] = useState(false);
       const [showAdmin, setShowAdmin] = useState(false);
@@ -469,16 +476,39 @@
 
       useEffect(() => { fetchData(); }, []);
 
+      useEffect(() => {
+        const key = `${activeYear}-${activeMonth}`;
+        if (allMonthlyBudgets[key]) {
+          setBudgets(allMonthlyBudgets[key]);
+        } else {
+          fetchMonthlyBudget(activeYear, activeMonth);
+        }
+      }, [activeMonth, activeYear]);
+
+      const fetchMonthlyBudget = async (year, month) => {
+        const { data } = await supabase.from("monthly_budgets")
+          .select("*").eq("user_id", user.id).eq("year", year).eq("month", month).single();
+        const budget = data
+          ? { mat: data.mat, transport: data.transport, fritid: data.fritid, annet: data.annet }
+          : { mat: 5000, transport: 1500, fritid: 2000, annet: 1000 };
+        setBudgets(budget);
+        setAllMonthlyBudgets(prev => ({ ...prev, [`${year}-${month}`]: budget }));
+      };
+
       const fetchData = async () => {
         setLoading(true);
-        const [{ data: txData }, { data: budgetData }, { data: adminData }] = await Promise.all([
+        const [{ data: txData }, { data: adminData }, { data: budgetData }] = await Promise.all([
           supabase.from("transactions").select("*").eq("user_id", user.id),
-          supabase.from("budgets").select("*").eq("user_id", user.id).single(),
           supabase.from("admins").select("*").eq("user_id", user.id).single(),
+          supabase.from("monthly_budgets").select("*").eq("user_id", user.id)
+            .eq("year", new Date().getFullYear()).eq("month", new Date().getMonth()).single(),
         ]);
         if (txData) setTransactions(txData);
-        if (budgetData) setBudgets({ mat: budgetData.mat, transport: budgetData.transport, fritid: budgetData.fritid, annet: budgetData.annet });
         if (adminData) setIsAdmin(true);
+        const budget = budgetData
+          ? { mat: budgetData.mat, transport: budgetData.transport, fritid: budgetData.fritid, annet: budgetData.annet }
+          : { mat: 5000, transport: 1500, fritid: 2000, annet: 1000 };
+        setBudgets(budget);
         setLoading(false);
       };
 
@@ -510,8 +540,11 @@
       };
 
       const saveBudgets = async () => {
-        await supabase.from("budgets").upsert({ user_id:user.id, ...editBudget });
+        await supabase.from("monthly_budgets").upsert({
+          user_id: user.id, year: activeYear, month: activeMonth, ...editBudget
+        });
         setBudgets({...editBudget});
+        setAllMonthlyBudgets(prev => ({ ...prev, [`${activeYear}-${activeMonth}`]: {...editBudget} }));
         setView("oversikt");
       };
 
@@ -528,6 +561,11 @@
               </div>
             </div>
             <h1 style={s.headerTitle}>Budsjett</h1>
+            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+              <button onClick={()=>setActiveYear(y=>y-1)} style={{...s.monthBtn,padding:"4px 10px"}}>‹</button>
+              <span style={{fontSize:"13px",color:"rgba(255,255,255,0.6)",fontWeight:"500"}}>{activeYear}</span>
+              <button onClick={()=>setActiveYear(y=>y+1)} style={{...s.monthBtn,padding:"4px 10px"}}>›</button>
+            </div>
             <div style={s.monthPicker}>{MONTHS_SHORT.map((m,i)=><button key={i} onClick={()=>setActiveMonth(i)} style={{...s.monthBtn,...(activeMonth===i?s.monthBtnActive:{})}}>{m}</button>)}</div>
             <div style={s.card}>
               <div style={{flex:1}}><div style={s.summaryLabel}>Brukt denne måneden</div><div style={s.summaryAmount}>{formatNOK(totalSpent)}</div><div style={s.summaryOf}>av {formatNOK(totalBudget)} budsjett</div></div>
@@ -566,6 +604,17 @@
             {view==="budsjett"&&editBudget&&(
               <div style={s.overlay}><div style={s.modal}>
                 <div style={s.modalTitle}>Rediger budsjett</div>
+                <div style={{display:"flex",gap:"10px",marginBottom:"20px",alignItems:"center"}}>
+                  <select value={activeMonth} onChange={e=>{setActiveMonth(Number(e.target.value));setEditBudget({...budgets});}}
+                    style={{...s.input,flex:1}}>
+                    {MONTHS_SHORT.map((m,i)=><option key={i} value={i} style={{background:"#1a1a2e"}}>{m}</option>)}
+                  </select>
+                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                    <button onClick={()=>setActiveYear(y=>y-1)} style={{...s.monthBtn,padding:"8px 12px"}}>‹</button>
+                    <span style={{fontSize:"14px",color:"white",fontWeight:"500",minWidth:"44px",textAlign:"center"}}>{activeYear}</span>
+                    <button onClick={()=>setActiveYear(y=>y+1)} style={{...s.monthBtn,padding:"8px 12px"}}>›</button>
+                  </div>
+                </div>
                 {CATEGORIES.map(c=><div key={c.id} style={s.fg}><div style={s.flabel}><CatIcon id={c.id} size={14} color="currentColor" /> {c.label}</div><input style={s.input} type="number" value={editBudget[c.id]} onChange={e=>setEditBudget({...editBudget,[c.id]:parseFloat(e.target.value)||0})}/></div>)}
                 <div style={s.modalBtns}><button onClick={()=>setView("oversikt")} style={s.btnSec}>Avbryt</button><button onClick={saveBudgets} style={s.btnPri}>Lagre</button></div>
               </div></div>
