@@ -58,19 +58,40 @@
       const [reportMonth, setReportMonth] = useState(new Date().getMonth());
       const [reportYear, setReportYear] = useState(new Date().getFullYear());
 
-      const monthTxs = transactions.filter(t => {
+      const getTxs = (month, year) => transactions.filter(t => {
         const d = new Date(t.date);
-        return d.getMonth() === reportMonth && d.getFullYear() === reportYear;
+        return d.getMonth() === month && d.getFullYear() === year;
       });
 
-      const spentByCategory = CATEGORIES.reduce((acc, c) => {
-        acc[c.id] = monthTxs.filter(t => t.category === c.id).reduce((sum, t) => sum + Number(t.amount), 0);
+      const getSpent = (month, year) => CATEGORIES.reduce((acc, c) => {
+        acc[c.id] = getTxs(month, year).filter(t => t.category === c.id).reduce((sum, t) => sum + Number(t.amount), 0);
         return acc;
       }, {});
 
+      const monthTxs = getTxs(reportMonth, reportYear);
+      const spentByCategory = getSpent(reportMonth, reportYear);
       const totalSpent = Object.values(spentByCategory).reduce((a, b) => a + b, 0);
       const totalBudget = Object.values(budgets).reduce((a, b) => a + b, 0);
       const saved = totalBudget - totalSpent;
+
+      // Previous month
+      const prevMonth = reportMonth === 0 ? 11 : reportMonth - 1;
+      const prevYear = reportMonth === 0 ? reportYear - 1 : reportYear;
+      const prevSpent = getSpent(prevMonth, prevYear);
+      const prevTotal = Object.values(prevSpent).reduce((a, b) => a + b, 0);
+
+      // Same month last year
+      const lastYearSpent = getSpent(reportMonth, reportYear - 1);
+      const lastYearTotal = Object.values(lastYearSpent).reduce((a, b) => a + b, 0);
+
+      const diffArrow = (current, previous) => {
+        if (previous === 0) return null;
+        const diff = current - previous;
+        const pct = Math.round(Math.abs(diff / previous) * 100);
+        return diff > 0
+          ? <span style={{fontSize:"11px",color:"#FF6B6B",marginLeft:"6px"}}>↑ {pct}%</span>
+          : <span style={{fontSize:"11px",color:"#A8E6CF",marginLeft:"6px"}}>↓ {pct}%</span>;
+      };
 
       const printReport = () => {
         const printContent = document.getElementById("report-content").innerHTML;
@@ -153,24 +174,36 @@
                     <div key={cat.id} style={{paddingBottom: i<CATEGORIES.length-1?"16px":"0", marginBottom: i<CATEGORIES.length-1?"16px":"0", borderBottom: i<CATEGORIES.length-1?"1px solid rgba(255,255,255,0.06)":"none"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
                         <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                          <span style={{fontSize:"16px"}}>{cat.icon}</span>
+                          <CatIcon id={cat.id} size={16} color={cat.color} />
                           <span style={{fontSize:"14px",color:"rgba(255,255,255,0.8)"}}>{cat.label}</span>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <span style={{fontSize:"15px",fontWeight:"600",color:over?"#FF6B6B":"white"}}>{formatNOK(spent)}</span>
                           <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)",marginLeft:"4px"}}>/ {formatNOK(budget)}</span>
+                          {diffArrow(spent, prevSpent[cat.id])}
                         </div>
                       </div>
                       <div style={s.progressBg}>
                         <div style={{...s.progressFill, width:`${pct}%`, background:over?"#FF6B6B":cat.color}}/>
                       </div>
+                      <div style={{display:"flex",gap:"16px",marginTop:"6px"}}>
+                        {prevTotal > 0 && <span style={{fontSize:"11px",color:"rgba(255,255,255,0.3)"}}>Forrige mnd: {formatNOK(prevSpent[cat.id])}</span>}
+                        {lastYearTotal > 0 && <span style={{fontSize:"11px",color:"rgba(255,255,255,0.3)"}}>I fjor: {formatNOK(lastYearSpent[cat.id])}</span>}
+                      </div>
                       {over && <div style={{fontSize:"12px",color:"#FF6B6B",marginTop:"4px"}}>Overforbruk: {formatNOK(spent-budget)}</div>}
                     </div>
                   );
                 })}
-                <div style={{display:"flex",justifyContent:"space-between",paddingTop:"16px",borderTop:"1px solid rgba(255,255,255,0.1)",marginTop:"8px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:"16px",borderTop:"1px solid rgba(255,255,255,0.1)",marginTop:"8px"}}>
                   <span style={{fontSize:"14px",color:"rgba(255,255,255,0.6)",fontWeight:"600"}}>Totalt</span>
-                  <span style={{fontSize:"15px",fontWeight:"600",color:totalSpent>totalBudget?"#FF6B6B":"white"}}>{formatNOK(totalSpent)}</span>
+                  <div style={{textAlign:"right"}}>
+                    <span style={{fontSize:"15px",fontWeight:"600",color:totalSpent>totalBudget?"#FF6B6B":"white"}}>{formatNOK(totalSpent)}</span>
+                    {diffArrow(totalSpent, prevTotal)}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:"16px",marginTop:"8px",paddingTop:"8px",borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+                  {prevTotal > 0 && <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)"}}>Forrige mnd: {formatNOK(prevTotal)} {diffArrow(totalSpent,prevTotal)}</span>}
+                  {lastYearTotal > 0 && <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)"}}>Same mnd i fjor: {formatNOK(lastYearTotal)}</span>}
                 </div>
               </div>
 
