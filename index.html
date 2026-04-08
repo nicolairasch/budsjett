@@ -32,13 +32,23 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const CATEGORIES = [
-      { id: "mat", label: "Mat & Drikke", icon: "🛒", color: "#E8A87C" },
-      { id: "transport", label: "Transport", icon: "🚌", color: "#85C1E9" },
-      { id: "fritid", label: "Fritid", icon: "🎮", color: "#A29BFE" },
-      { id: "annet", label: "Annet", icon: "📦", color: "#81ECEC" },
+      { id: "mat", label: "Mat & Drikke", icon: "mat", color: "#E8A87C" },
+      { id: "transport", label: "Transport", icon: "transport", color: "#85C1E9" },
+      { id: "fritid", label: "Fritid", icon: "fritid", color: "#A29BFE" },
+      { id: "annet", label: "Annet", icon: "annet", color: "#81ECEC" },
     ];
 
     const MONTHS = ["Januar","Februar","Mars","April","Mai","Juni","Juli","August","September","Oktober","November","Desember"];
+    const CatIcon = ({ id, size=18, color="currentColor" }) => {
+      const icons = {
+        mat: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
+        transport: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+        fritid: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+        annet: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
+      };
+      return icons[id] || null;
+    };
+
     const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Des"];
     const formatNOK = (n) => new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK", maximumFractionDigits: 0 }).format(n);
     const today = () => new Date().toISOString().split("T")[0];
@@ -393,10 +403,10 @@
                 <svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8"/><circle cx="40" cy="40" r="34" fill="none" stroke={totalSpent>totalBudget?"#FF6B6B":"#A8E6CF"} strokeWidth="8" strokeDasharray={`${totalBudget>0?Math.min(totalSpent/totalBudget,1)*213.6:0} 213.6`} strokeLinecap="round" transform="rotate(-90 40 40)"/><text x="40" y="45" textAnchor="middle" fill="white" fontSize="12" fontWeight="700">{totalBudget>0?Math.round((totalSpent/totalBudget)*100):0}%</text></svg>
               </div>
               <div style={s.sectionTitle}>KATEGORIER</div>
-              <div style={{...s.grid,marginBottom:"28px"}}>{CATEGORIES.map(cat=>{const sp=spent[cat.id];const bu=budgets[cat.id]||0;const over=sp>bu&&bu>0;return(<div key={cat.id} style={s.catCard}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px"}}><span style={{fontSize:"18px"}}>{cat.icon}</span><span style={s.catLabel}>{cat.label}</span></div><div style={{marginBottom:"10px"}}><span style={{...s.catSpent,color:over?"#FF6B6B":"white"}}>{formatNOK(sp)}</span><span style={s.catBudget}>/ {formatNOK(bu)}</span></div><div style={s.progressBg}><div style={{...s.progressFill,width:`${bu>0?Math.min((sp/bu)*100,100):0}%`,background:over?"#FF6B6B":cat.color}}/></div></div>);})}</div>
+              <div style={{...s.grid,marginBottom:"28px"}}>{CATEGORIES.map(cat=>{const sp=spent[cat.id];const bu=budgets[cat.id]||0;const over=sp>bu&&bu>0;return(<div key={cat.id} style={s.catCard}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px"}}><CatIcon id={cat.id} size={18} color={cat.color} /><span style={s.catLabel}>{cat.label}</span></div><div style={{marginBottom:"10px"}}><span style={{...s.catSpent,color:over?"#FF6B6B":"white"}}>{formatNOK(sp)}</span><span style={s.catBudget}>/ {formatNOK(bu)}</span></div><div style={s.progressBg}><div style={{...s.progressFill,width:`${bu>0?Math.min((sp/bu)*100,100):0}%`,background:over?"#FF6B6B":cat.color}}/></div></div>);})}</div>
               <div style={s.sectionTitle}>TRANSAKSJONER</div>
               {txs.length===0&&<div style={s.empty}>Ingen transaksjoner</div>}
-              <div style={{display:"flex",flexDirection:"column",gap:"10px",paddingBottom:"40px"}}>{[...txs].reverse().map(t=>{const cat=CATEGORIES.find(c=>c.id===t.category);return(<div key={t.id} style={s.txItem}><div style={{...s.txDot,background:cat.color}}>{cat.icon}</div><div style={{flex:1}}><div style={s.txDesc}>{t.beskrivelse}</div><div style={s.txMeta}>{cat.label} · {t.date}</div></div><div style={s.txAmount}>−{formatNOK(t.amount)}</div></div>);})}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:"10px",paddingBottom:"40px"}}>{[...txs].reverse().map(t=>{const cat=CATEGORIES.find(c=>c.id===t.category);return(<div key={t.id} style={s.txItem}><div style={{...s.txDot,background:cat.color}}><CatIcon id={cat.id} size={18} color="white" /></div><div style={{flex:1}}><div style={s.txDesc}>{t.beskrivelse}</div><div style={s.txMeta}>{cat.label} · {t.date}</div></div><div style={s.txAmount}>−{formatNOK(t.amount)}</div></div>);})}</div>
             </div>
           </div>
         );
@@ -524,11 +534,11 @@
               <svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8"/><circle cx="40" cy="40" r="34" fill="none" stroke={totalSpent>totalBudget?"#FF6B6B":"#A8E6CF"} strokeWidth="8" strokeDasharray={`${pctTotal*213.6} 213.6`} strokeLinecap="round" transform="rotate(-90 40 40)"/><text x="40" y="45" textAnchor="middle" fill="white" fontSize="12" fontWeight="700">{Math.round(pctTotal*100)}%</text></svg>
             </div>
             <div style={s.sectionTitle}>KATEGORIER</div>
-            <div style={s.grid}>{CATEGORIES.map(cat=>{const spent=spentByCategory[cat.id];const budget=budgets[cat.id];const over=spent>budget;return(<div key={cat.id} style={s.catCard}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px"}}><span style={{fontSize:"18px"}}>{cat.icon}</span><span style={s.catLabel}>{cat.label}</span></div><div style={{marginBottom:"10px"}}><span style={{...s.catSpent,color:over?"#FF6B6B":"white"}}>{formatNOK(spent)}</span><span style={s.catBudget}>/ {formatNOK(budget)}</span></div><div style={s.progressBg}><div style={{...s.progressFill,width:`${Math.min((spent/budget)*100,100)}%`,background:over?"#FF6B6B":cat.color}}/></div></div>);})}</div>
+            <div style={s.grid}>{CATEGORIES.map(cat=>{const spent=spentByCategory[cat.id];const budget=budgets[cat.id];const over=spent>budget;return(<div key={cat.id} style={s.catCard}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px"}}><CatIcon id={cat.id} size={18} color={cat.color} /><span style={s.catLabel}>{cat.label}</span></div><div style={{marginBottom:"10px"}}><span style={{...s.catSpent,color:over?"#FF6B6B":"white"}}>{formatNOK(spent)}</span><span style={s.catBudget}>/ {formatNOK(budget)}</span></div><div style={s.progressBg}><div style={{...s.progressFill,width:`${Math.min((spent/budget)*100,100)}%`,background:over?"#FF6B6B":cat.color}}/></div></div>);})}</div>
             <div style={s.sectionTitle}>TRANSAKSJONER</div>
             {monthTxs.length===0&&<div style={s.empty}>Ingen transaksjoner denne måneden</div>}
             <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"140px"}}>
-              {[...monthTxs].reverse().map(t=>{const cat=CATEGORIES.find(c=>c.id===t.category);return(<div key={t.id} style={s.txItem}><div style={{...s.txDot,background:cat.color}}>{cat.icon}</div><div style={{flex:1}}><div style={s.txDesc}>{t.beskrivelse}</div><div style={s.txMeta}>{cat.label} · {t.date}</div></div><div style={{display:"flex",alignItems:"center",gap:"10px"}}><div style={s.txAmount}>−{formatNOK(t.amount)}</div><button onClick={()=>removeTransaction(t.id)} style={s.txDel}>✕</button></div></div>);})}
+              {[...monthTxs].reverse().map(t=>{const cat=CATEGORIES.find(c=>c.id===t.category);return(<div key={t.id} style={s.txItem}><div style={{...s.txDot,background:cat.color}}><CatIcon id={cat.id} size={18} color="white" /></div><div style={{flex:1}}><div style={s.txDesc}>{t.beskrivelse}</div><div style={s.txMeta}>{cat.label} · {t.date}</div></div><div style={{display:"flex",alignItems:"center",gap:"10px"}}><div style={s.txAmount}>−{formatNOK(t.amount)}</div><button onClick={()=>removeTransaction(t.id)} style={s.txDel}>✕</button></div></div>);})}
             </div>
 
             <div style={s.fabRow}>
@@ -544,7 +554,7 @@
             {view==="legg-til"&&(
               <div style={s.overlay}><div style={s.modal}>
                 <div style={s.modalTitle}>Legg til utgift</div>
-                <div style={s.fg}><div style={s.flabel}>Kategori</div><div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>{CATEGORIES.map(c=><button key={c.id} onClick={()=>setForm({...form,category:c.id})} style={{...s.catBtn,...(form.category===c.id?{background:c.color,color:"#1a1a2e"}:{})}}>{c.icon} {c.label}</button>)}</div></div>
+                <div style={s.fg}><div style={s.flabel}>Kategori</div><div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>{CATEGORIES.map(c=><button key={c.id} onClick={()=>setForm({...form,category:c.id})} style={{...s.catBtn,...(form.category===c.id?{background:c.color,color:"#1a1a2e"}:{})}}><CatIcon id={c.id} size={14} color="currentColor" /> {c.label}</button>)}</div></div>
                 <div style={s.fg}><div style={s.flabel}>Beskrivelse</div><input style={s.input} placeholder="F.eks. Meny handletur" value={form.beskrivelse} onChange={e=>setForm({...form,beskrivelse:e.target.value})}/></div>
                 <div style={{display:"flex",gap:"14px"}}>
                   <div style={{...s.fg,flex:1}}><div style={s.flabel}>Beløp (kr)</div><input style={s.input} type="number" placeholder="0" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></div>
@@ -556,7 +566,7 @@
             {view==="budsjett"&&editBudget&&(
               <div style={s.overlay}><div style={s.modal}>
                 <div style={s.modalTitle}>Rediger budsjett</div>
-                {CATEGORIES.map(c=><div key={c.id} style={s.fg}><div style={s.flabel}>{c.icon} {c.label}</div><input style={s.input} type="number" value={editBudget[c.id]} onChange={e=>setEditBudget({...editBudget,[c.id]:parseFloat(e.target.value)||0})}/></div>)}
+                {CATEGORIES.map(c=><div key={c.id} style={s.fg}><div style={s.flabel}><CatIcon id={c.id} size={14} color="currentColor" /> {c.label}</div><input style={s.input} type="number" value={editBudget[c.id]} onChange={e=>setEditBudget({...editBudget,[c.id]:parseFloat(e.target.value)||0})}/></div>)}
                 <div style={s.modalBtns}><button onClick={()=>setView("oversikt")} style={s.btnSec}>Avbryt</button><button onClick={saveBudgets} style={s.btnPri}>Lagre</button></div>
               </div></div>
             )}
